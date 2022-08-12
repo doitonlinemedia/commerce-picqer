@@ -1,0 +1,50 @@
+{% extends "commerce-picqer/_layouts/main" %}
+
+{% set title = "Purchase orders"|t('commerce-picqer') %}
+{% set selectedSubnavItem = "Purchase orders" %}
+
+{% set content %}
+    <div id="noforms"{% if purchaseOrders %} class="hidden"{% endif %}>
+        <p>{{ "No purchase orders found"|t('commerce-picqer') }}</p>
+    </div>
+
+    {% if purchaseOrders|length %}
+        <table id="forms" class="data fullwidth collapsible">
+            <thead>
+            <th scope="col">{{ "ID purchase order"|t('commerce-picqer') }}</th>
+            <th scope="col">{{ "Purchase order ID"|t('commerce-picqer') }}</th>
+            <th scope="col">{{ "Supplier ID"|t('commerce-picqer') }}</th>
+            <th scope="col">{{ "Send to Exact"|t('commerce-picqer') }}</th>
+            <td class="thin"></td>
+            </thead>
+            <tbody>
+            {% for purchaseOrder in purchaseOrders %}
+                <td>
+                    <div style="overflow: hidden; height: 18px;" title="{{ purchaseOrder.id }}">
+                        {{ purchaseOrder.idPurchaseOrder|truncater(80) }}
+                    </div>
+                </td>
+                <td>
+                    <div style="overflow: hidden; height: 18px;" title="{{ purchaseOrder.id }}">
+                        {{ purchaseOrder.purchaseOrderId|truncater(80) }}
+                    </div>
+                </td>
+                <td>
+                    <div style="overflow: hidden; height: 18px;" title="{{ purchaseOrder.id }}">
+                        {{ purchaseOrder.supplierOrderId|truncater(80) }}
+                    </div>
+                </td>
+                <td>
+                    <div style="overflow: hidden; height: 18px;" title="{{ purchaseOrder.id }}">
+                        {% if purchaseOrder.exactGuid %}
+                            Ja
+                        {% else %}
+                            Nee
+                        {% endif %}
+                    </div>
+                </td>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endset %}

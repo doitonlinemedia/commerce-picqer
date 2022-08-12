@@ -11,11 +11,14 @@ use craft\helpers\UrlHelper;
 use craft\services\UserPermissions;
 use craft\web\Controller;
 use craft\web\UrlManager;
+use Solspace\Freeform\Freeform;
+use Solspace\Freeform\Services\FormsService;
 use white\commerce\picqer\models\Settings;
 use white\commerce\picqer\services\Log;
 use white\commerce\picqer\services\OrderSync;
 use white\commerce\picqer\services\PicqerApi;
 use white\commerce\picqer\services\ProductSync;
+use white\commerce\picqer\services\PurchaseOrderService;
 use white\commerce\picqer\services\Webhooks;
 use yii\base\Event;
 
@@ -25,15 +28,17 @@ use yii\base\Event;
  * @property OrderSync $orderSync
  * @property ProductSync $productSync
  * @property Webhooks $webhooks
- * 
+ * @property PurchaseOrderService $purchaseOrderService
+ *
  * @method Settings getSettings()
  */
 class CommercePicqerPlugin extends Plugin
 {
     public $schemaVersion = '1.0.3';
-    
+
     public function init()
     {
+
         parent::init();
 
         $this->registerNameOverride();
@@ -41,6 +46,7 @@ class CommercePicqerPlugin extends Plugin
         $this->registerEventListeners();
         $this->registerCpUrls();
         $this->registerPermissions();
+
     }
 
     protected function registerNameOverride()
@@ -56,26 +62,28 @@ class CommercePicqerPlugin extends Plugin
     protected function registerServices()
     {
         $this->setComponents([
-            'api' => PicqerApi::class,
-            'log' => Log::class,
-            'orderSync' => OrderSync::class,
-            'productSync' => ProductSync::class,
-            'webhooks' => Webhooks::class,
+            'api'                  => PicqerApi::class,
+            'log'                  => Log::class,
+            'orderSync'            => OrderSync::class,
+            'productSync'          => ProductSync::class,
+            'webhooks'             => Webhooks::class,
+            'purchaseOrderService' => PurchaseOrderService::class,
         ]);
     }
 
     protected function registerEventListeners()
     {
+
         $this->orderSync->registerEventListeners();
 
-        Craft::$app->getView()->hook('cp.commerce.order.edit.details', function(array &$context) { // Commerce 3.2.0
+        Craft::$app->getView()->hook('cp.commerce.order.edit.details', function (array &$context) { // Commerce 3.2.0
             /** @var Order $order */
-            $order = $context['order'];
+            $order  = $context['order'];
             $status = $this->orderSync->getOrderSyncStatus($order);
 
             return Craft::$app->getView()->renderTemplate('commerce-picqer/_order-details-panel', [
                 'plugin' => $this,
-                'order' => $order,
+                'order'  => $order,
                 'status' => $status,
             ]);
         });
@@ -99,9 +107,10 @@ class CommercePicqerPlugin extends Plugin
         Event::on(
             UrlManager::class,
             UrlManager::EVENT_REGISTER_CP_URL_RULES,
-            function(RegisterUrlRulesEvent $event) {
-                $event->rules['commerce-picqer'] = 'commerce-picqer/admin/settings';
-                $event->rules['commerce-picqer/settings'] = 'commerce-picqer/admin/settings';
+            function (RegisterUrlRulesEvent $event) {
+                $event->rules['commerce-picqer']                 = 'commerce-picqer/admin/settings';
+                $event->rules['commerce-picqer/settings']        = 'commerce-picqer/admin/settings';
+                $event->rules['commerce-picqer/purchase-orders'] = 'commerce-picqer/admin/purchase-orders';
             }
         );
     }
@@ -111,11 +120,15 @@ class CommercePicqerPlugin extends Plugin
      */
     public function getCpNavItem()
     {
-        $item = parent::getCpNavItem();
+        $item           = parent::getCpNavItem();
         $item['subnav'] = [
-            'settings' => [
+            'settings'        => [
                 'label' => Craft::t('commerce-picqer', 'Settings'),
-                'url' => 'commerce-picqer/settings'
+                'url'   => 'commerce-picqer/settings'
+            ],
+            'purchase-orders' => [
+                'label' => Craft::t('commerce-picqer', 'Purchase orders'),
+                'url'   => 'commerce-picqer/purchase-orders'
             ],
         ];
         return $item;
@@ -123,10 +136,13 @@ class CommercePicqerPlugin extends Plugin
 
     protected function registerPermissions()
     {
-        Event::on(UserPermissions::class, UserPermissions::EVENT_REGISTER_PERMISSIONS, function(RegisterUserPermissionsEvent $event) {
-            $event->permissions[Craft::t('commerce-picqer', 'Picqer')] = [
-                'commerce-picqer-pushOrders' => ['label' => Craft::t('commerce-picqer', 'Manually push orders to Picqer')],
-            ];
-        });
+        Event::on(UserPermissions::class, UserPermissions::EVENT_REGISTER_PERMISSIONS,
+            function (RegisterUserPermissionsEvent $event) {
+                $event->permissions[Craft::t('commerce-picqer', 'Picqer')] = [
+                    'commerce-picqer-pushOrders' => [
+                        'label' => Craft::t('commerce-picqer', 'Manually push orders to Picqer')
+                    ],
+                ];
+            });
     }
 }
