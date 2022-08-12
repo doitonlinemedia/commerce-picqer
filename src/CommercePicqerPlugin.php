@@ -11,8 +11,6 @@ use craft\helpers\UrlHelper;
 use craft\services\UserPermissions;
 use craft\web\Controller;
 use craft\web\UrlManager;
-use Solspace\Freeform\Freeform;
-use Solspace\Freeform\Services\FormsService;
 use white\commerce\picqer\models\Settings;
 use white\commerce\picqer\services\Log;
 use white\commerce\picqer\services\OrderSync;
