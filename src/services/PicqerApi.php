@@ -4,6 +4,7 @@
 namespace white\commerce\picqer\services;
 
 use craft\base\Component;
+use craft\commerce\base\Purchasable;
 use craft\commerce\base\PurchasableInterface;
 use craft\commerce\elements\Order;
 use craft\commerce\models\Address;
@@ -69,20 +70,24 @@ class PicqerApi extends Component
     }
 
     /**
-     * @param PurchasableInterface[] $purchasables
+     * @param Purchasable $purchasable
+     * @return mixed
      */
-    public function createMissingProducts(array $purchasables)
+    public function createMissingProduct(Purchasable $purchasable)
     {
-        foreach ($purchasables as $purchasable) {
-            $result = $this->getClient()->getProducts(['productcode' => $purchasable->getSku()]);
-            if (empty($result['data'])) {
-                $this->getClient()->addProduct([
-                    'productcode' => $purchasable->getSku(),
-                    'name' => $purchasable->getDescription(),
-                    'price' => $purchasable->getPrice(),
-                ]);
-            }
+        $result = $this->getClient()->getProducts(['productcode' => $purchasable->getSku()]);
+        $productData = [
+            'productcode' => $purchasable->getSku(),
+            'name' => $purchasable->getDescription(),
+            'price' => $purchasable->getPrice(),
+            'type' => 'virtual_composition',
+        ];
+        if (empty($result['data'])) {
+            $response = $this->getClient()->addProduct($productData);
+        } else {
+            $response = $this->getClient()->updateProduct($result['data'][0]['idproduct'], $productData);
         }
+        return $response['data']['idproduct'];
     }
 
     public function pushOrder(Order $order, $createMissingProducts = false)
@@ -90,6 +95,9 @@ class PicqerApi extends Component
         $data = $this->buildOrderData($order);
         $data['products'] = [];
         foreach ($order->getLineItems() as $lineItem) {
+            if ($createMissingProducts) {
+                $this->createMissingProduct($lineItem->purchasable);
+            }
             $lineData = [
                 'productcode' => (string)$lineItem->getSku(),
                 'amount' => $lineItem->qty,
@@ -102,26 +110,10 @@ class PicqerApi extends Component
 
             $data['products'][] = $lineData;
         }
-        
-        try {
-            $response = $this->getClient()->addOrder($data);
-            if (!$response['success'] || !isset($response['data']['idorder'])) {
-                throw new PicqerApiException($response);
-            }
-        } catch (PicqerApiException $e) {
-            if ($e->getPicqerErrorCode() == PicqerApiException::PRODUCT_DOES_NOT_EXIST && $createMissingProducts) {
-                $purchasables = [];
-                foreach ($order->getLineItems() as $lineItem) {
-                    if (!array_keys($purchasables, $lineItem->getSku())) {
-                        $purchasables[$lineItem->getSku()] = $lineItem->getPurchasable();
-                    }
-                }
-                $this->createMissingProducts($purchasables);
-                
-                return $this->pushOrder($order, false);
-            } else {
-                throw $e;
-            }
+
+        $response = $this->getClient()->addOrder($data);
+        if (!$response['success'] || !isset($response['data']['idorder'])) {
+            throw new PicqerApiException($response);
         }
         
         return $response['data']; 
@@ -169,25 +161,9 @@ class PicqerApi extends Component
             if (!$response['success']) {
                 throw new PicqerApiException($response);
             }
-            if (!empty($response['data'][0]['idproduct'])) {
-                $picqerProductId = $response['data'][0]['idproduct'];
-            } else {
-                if (!$createMissingProducts) {
-                    throw new \Exception("Product '{$lineItem->getSku()}' not found in Picqer.");
-                }
-                $response = $this->getClient()->addProduct([
-                    'productcode' => $lineItem->getSku(),
-                    'name' => $lineItem->getDescription(),
-                    'price' => $lineItem->getPrice(),
-                ]);
-                if (!$response['success'] || empty($response['data']['idproduct'])) {
-                    throw new PicqerApiException($response);
-                }
-                $picqerProductId = $response['data']['idproduct'];
-            }
 
             $lineData = [
-                'idproduct' => $picqerProductId,
+                'idproduct' => $this->createMissingProduct($lineItem->purchasable),
                 'amount' => $lineItem->qty,
                 'remarks' => (string)$lineItem->note,
             ];
