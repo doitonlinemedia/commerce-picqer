@@ -38,6 +38,10 @@ class Settings extends Model
 
     public $pluginNameOverride;
 
+    public $getProductTypes = [];
+
+    public $productType = '';
+
     /**
      * @inheritdoc
      */
@@ -71,6 +75,27 @@ class Settings extends Model
             $options[] = ['value' => $status->handle, 'label' => $status->displayName];
         }
         
+        return $options;
+    }
+
+    /**
+     * @param $optional
+     * @return array
+     */
+    public function getProductTypes($optional = null): array
+    {
+        $types = CommercePlugin::getInstance()->getProductTypes()->getAllProductTypes();
+        $options = [];
+
+        if ($optional !== null) {
+            $options[] = ['value' => null, 'label' => $optional];
+        }
+
+
+        foreach ($types as $type) {
+            $options[] = ['value' => $type->handle, 'label' => $type->name];
+        }
+
         return $options;
     }
 

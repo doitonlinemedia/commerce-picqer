@@ -7,11 +7,13 @@ use craft\base\Component;
 use craft\commerce\base\Purchasable;
 use craft\commerce\base\PurchasableInterface;
 use craft\commerce\elements\Order;
+use craft\commerce\elements\Product;
 use craft\commerce\models\Address;
 use Picqer\Api\Client as PicqerApiClient;
 use white\commerce\picqer\CommercePicqerPlugin;
 use white\commerce\picqer\errors\PicqerApiException;
 use white\commerce\picqer\models\Settings;
+use yii\base\InvalidConfigException;
 
 class PicqerApi extends Component
 {
@@ -71,7 +73,20 @@ class PicqerApi extends Component
 
     /**
      * @param Purchasable $purchasable
+     * @return string
+     * @throws InvalidConfigException
+     */
+    public function checkProductType(Purchasable $purchasable): string
+    {
+        $product = Product::find()->where(['sku', $purchasable->getSku()])->one();
+        $virtualProductType = $this->settings->getProductTypes;
+        return $product->getType() === $virtualProductType ? 'virtual_composition' : 'normal';
+    }
+
+    /**
+     * @param Purchasable $purchasable
      * @return mixed
+     * @throws InvalidConfigException
      */
     public function createMissingProduct(Purchasable $purchasable)
     {
@@ -80,7 +95,7 @@ class PicqerApi extends Component
             'productcode' => $purchasable->getSku(),
             'name' => $purchasable->getDescription(),
             'price' => $purchasable->getPrice(),
-            'type' => 'virtual_composition',
+            'type' => $this->checkProductType($purchasable),
         ];
         if (empty($result['data'])) {
             $response = $this->getClient()->addProduct($productData);

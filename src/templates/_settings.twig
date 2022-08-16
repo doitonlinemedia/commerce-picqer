@@ -212,6 +212,17 @@
                     errors:       settings.getErrors('pluginNameOverride'),
                     disabled:     not allowAdminChanges,
                 }) }}
+
+                {{ forms.selectField({
+                    label:        "Virtual product type"|t('commerce-picqer'),
+                    instructions: "What product type we should treat as a virtual product. (Choose None if you do not want to use this)"|t('commerce-picqer'),
+                    id:           'virtualProductType',
+                    name:         'virtualProductType',
+                    options:      settings.getProductTypes('None'),
+                    value:        settings.productType,
+                    errors:       settings.getErrors('virtualProductType'),
+                    disabled:     not allowAdminChanges,
+                }) }}
             </div>
         </div>
     </div>
