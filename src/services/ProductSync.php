@@ -7,7 +7,9 @@ namespace white\commerce\picqer\services;
 use craft\base\Component;
 use craft\commerce\elements\Variant;
 use craft\commerce\records\Variant as VariantRecord;
+use craft\helpers\Queue;
 use white\commerce\picqer\CommercePicqerPlugin;
+use white\commerce\picqer\jobs\SyncProductsJob;
 
 class ProductSync extends Component
 {
@@ -26,9 +28,9 @@ class ProductSync extends Component
         parent::init();
 
         $this->settings = CommercePicqerPlugin::getInstance()->getSettings();
-        $this->log = CommercePicqerPlugin::getInstance()->log;
+        $this->log      = CommercePicqerPlugin::getInstance()->log;
     }
-    
+
     public function updateStock($sku, $stock)
     {
         if ($this->settings->fastStockUpdate) {
@@ -48,8 +50,7 @@ class ProductSync extends Component
             } else {
                 $this->log->trace("Variant '{$sku}' stock remains unchanged: '{$stock}'");
             }
-        }
-        else {
+        } else {
             $variant = Variant::find()->sku($sku)->one();
             if (!$variant) {
                 $this->log->trace("Variant '{$sku}' not found.");
@@ -67,5 +68,10 @@ class ProductSync extends Component
                 $this->log->trace("Variant '{$sku}' stock remains unchanged: '{$stock}'");
             }
         }
+    }
+
+    public function syncProducts()
+    {
+        Queue::push(new SyncProductsJob(), 10);
     }
 }

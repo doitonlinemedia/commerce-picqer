@@ -22,6 +22,17 @@
     ]) %}
 {% endif %}
 
+
+{% set formActions = [
+    {
+        label: 'Sync products'|t('commerce-picqer'),
+        action: 'commerce-picqer/admin/products/sync-products',
+        redirect: 'commerce-picqer/settings',
+        retainScroll: true,
+        shortcut: false,
+    },
+] %}
+
 {% block actionButton %}
     {% if allowAdminChanges %}
         {{ parent() }}

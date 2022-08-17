@@ -11,6 +11,7 @@ use craft\helpers\UrlHelper;
 use craft\services\UserPermissions;
 use craft\web\Controller;
 use craft\web\UrlManager;
+use white\commerce\picqer\console\controllers\ProductsController;
 use white\commerce\picqer\models\Settings;
 use white\commerce\picqer\services\Log;
 use white\commerce\picqer\services\OrderSync;
@@ -19,6 +20,8 @@ use white\commerce\picqer\services\ProductSync;
 use white\commerce\picqer\services\PurchaseOrderService;
 use white\commerce\picqer\services\Webhooks;
 use yii\base\Event;
+use craft\events\DefineConsoleActionsEvent;
+
 
 /**
  * @property PicqerApi $api
@@ -36,15 +39,14 @@ class CommercePicqerPlugin extends Plugin
 
     public function init()
     {
-
         parent::init();
 
         $this->registerNameOverride();
         $this->registerServices();
         $this->registerEventListeners();
+        $this->registerConsoleCommands();
         $this->registerCpUrls();
         $this->registerPermissions();
-
     }
 
     protected function registerNameOverride()
@@ -55,6 +57,24 @@ class CommercePicqerPlugin extends Plugin
         }
 
         $this->name = $name;
+    }
+
+    protected function registerConsoleCommands()
+    {
+        Event::on(
+            ProductsController::class,
+            \craft\console\Controller::EVENT_DEFINE_ACTIONS,
+            function (DefineConsoleActionsEvent $event) {
+                $event->actions['sync-products'] = [
+                    'options'     => ['type'],
+                    'helpSummary' => 'Syncing products to picQer.',
+                    'action'      => function ($params): int {
+                        $controller = \Craft::$app->controller;
+                        return $controller->syncProducts();
+                    }
+                ];
+            }
+        );
     }
 
     protected function registerServices()
@@ -71,7 +91,6 @@ class CommercePicqerPlugin extends Plugin
 
     protected function registerEventListeners()
     {
-
         $this->orderSync->registerEventListeners();
 
         Craft::$app->getView()->hook('cp.commerce.order.edit.details', function (array &$context) { // Commerce 3.2.0
@@ -109,6 +128,7 @@ class CommercePicqerPlugin extends Plugin
                 $event->rules['commerce-picqer']                 = 'commerce-picqer/admin/settings';
                 $event->rules['commerce-picqer/settings']        = 'commerce-picqer/admin/settings';
                 $event->rules['commerce-picqer/purchase-orders'] = 'commerce-picqer/admin/purchase-orders';
+                $event->rules['commerce-picqer/admin/products/sync-products']   = 'commerce-picqer/admin/products/sync-products';
             }
         );
     }
@@ -134,13 +154,16 @@ class CommercePicqerPlugin extends Plugin
 
     protected function registerPermissions()
     {
-        Event::on(UserPermissions::class, UserPermissions::EVENT_REGISTER_PERMISSIONS,
+        Event::on(
+            UserPermissions::class,
+            UserPermissions::EVENT_REGISTER_PERMISSIONS,
             function (RegisterUserPermissionsEvent $event) {
                 $event->permissions[Craft::t('commerce-picqer', 'Picqer')] = [
                     'commerce-picqer-pushOrders' => [
                         'label' => Craft::t('commerce-picqer', 'Manually push orders to Picqer')
                     ],
                 ];
-            });
+            }
+        );
     }
 }
