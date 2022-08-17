@@ -51,6 +51,13 @@
             </p>
         </div>
     {% endif %}
+    {% set message = craft.app.session.getFlash('message') %}
+    {% if message %}
+        <div class="pane">
+
+            <p class="warning">{{ message }}</p>
+        </div>
+    {% endif %}
 
     {% namespace 'settings' %}
         <div id="fields">

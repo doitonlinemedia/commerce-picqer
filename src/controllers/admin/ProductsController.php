@@ -25,6 +25,10 @@ class ProductsController extends Controller
     public function actionSyncProducts()
     {
         CommercePicqerPlugin::getInstance()->productSync->syncProducts();
+        \Craft::$app->session->setFlash(
+            'message',
+            \Craft::t('commerce-picqer', 'Picqer product sync job added to queue.')
+        );
         return $this->redirect('commerce-picqer/settings');
     }
 

@@ -27,7 +27,7 @@ class SyncProductsJob extends \craft\queue\BaseJob implements RetryableJobInterf
         //get all products
         $products = Variant::find()
             ->status(Variant::STATUS_ENABLED)
-            ->get();
+            ->all();
         $logger   = CommercePicqerPlugin::getInstance()->log;
         $logger->log('starting bulk creating and updating products in picqer');
         $total = count($products);
