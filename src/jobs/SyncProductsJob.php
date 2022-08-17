@@ -51,7 +51,7 @@ class SyncProductsJob extends \craft\queue\BaseJob implements RetryableJobInterf
      */
     protected function defaultDescription(): string
     {
-        return \Craft::t('app', 'Syncing products with Picqer');
+        return \Craft::t('commerce-picqer', 'Syncing products with Picqer');
     }
 
     public function canRetry($attempt, $error)
