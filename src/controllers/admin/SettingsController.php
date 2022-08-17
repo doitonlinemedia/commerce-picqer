@@ -25,8 +25,8 @@ class SettingsController extends Controller
         $controller = Craft::$app->controller;
 
         return $controller->renderTemplate('commerce-picqer/_settings', [
-            'plugin' => CommercePicqerPlugin::getInstance(),
-            'settings' => $settings,
+            'plugin'            => CommercePicqerPlugin::getInstance(),
+            'settings'          => $settings,
             'allowAdminChanges' => Craft::$app->getConfig()->getGeneral()->allowAdminChanges,
         ]);
     }

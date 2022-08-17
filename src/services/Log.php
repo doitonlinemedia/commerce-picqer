@@ -20,9 +20,10 @@ class Log extends Component
     public function error($message, \Exception $exception = null)
     {
         if ($exception !== null) {
-            $message .= ' [' . get_class($exception) . '] ' . $exception->getMessage() . ' in ' . $exception->getFile() . ':' . $exception->getLine();
+            $message .= ' [' . get_class($exception) . '] ' . $exception->getMessage() . ' in ' . $exception->getFile(
+                ) . ':' . $exception->getLine();
         }
-        
+
         $this->log($message, Logger::LEVEL_ERROR);
     }
 

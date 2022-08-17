@@ -10,23 +10,23 @@ use craft\commerce\Plugin as CommercePlugin;
 class Settings extends Model
 {
     public $apiDomain;
-    
+
     public $apiKey;
 
     public $pushOrders = false;
-    
+
     public $orderStatusToPush = [];
-    
+
     public $orderStatusToAllocate = [];
-    
+
     public $orderStatusToProcess = [];
-    
+
     public $pushPrices = false;
-    
+
     public $createMissingProducts = false;
-    
+
     public $pullProductStock = false;
-    
+
     public $pullOrderStatus = false;
 
     /**
@@ -40,7 +40,8 @@ class Settings extends Model
 
     public $getProductTypes = [];
 
-    public $productType = '';
+    public $virtualProductType = '';
+
 
     /**
      * @inheritdoc
@@ -65,16 +66,16 @@ class Settings extends Model
     public function getOrderStatusOptions($optional = null)
     {
         $statuses = CommercePlugin::getInstance()->getOrderStatuses()->getAllOrderStatuses();
-        $options = [];
-        
+        $options  = [];
+
         if ($optional !== null) {
             $options[] = ['value' => null, 'label' => $optional];
         }
-        
+
         foreach ($statuses as $status) {
             $options[] = ['value' => $status->handle, 'label' => $status->displayName];
         }
-        
+
         return $options;
     }
 
@@ -84,7 +85,7 @@ class Settings extends Model
      */
     public function getProductTypes($optional = null): array
     {
-        $types = CommercePlugin::getInstance()->getProductTypes()->getAllProductTypes();
+        $types   = CommercePlugin::getInstance()->getProductTypes()->getAllProductTypes();
         $options = [];
 
         if ($optional !== null) {
@@ -123,4 +124,5 @@ class Settings extends Model
     {
         return \Craft::parseEnv($this->apiKey);
     }
+
 }
