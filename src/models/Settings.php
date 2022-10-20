@@ -29,6 +29,8 @@ class Settings extends Model
 
     public $pullOrderStatus = false;
 
+    public $pullPicklistShipmentCreated = false;
+
     /**
      * @var array
      */
