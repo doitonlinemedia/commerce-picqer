@@ -169,71 +169,41 @@ class WebhooksController extends Controller
         return $this->asJson(['status' => 'OK']);
     }
 
+//    TODO: Add mapping for this webhook
     public function actionPullPicklistShipmentCreated()
     {
-        if (!$this->settings->pullOrderStatus) {
+        if (!$this->settings->pullPicklistShipmentCreated) {
             return $this->asJson(['status' => 'IGNORED'])->setStatusCode(400);
         }
 
-        $originalPushOrders = $this->settings->pushOrders;
-        $this->settings->pushOrders = false;
         try {
-            $webhook = $this->receiveWebhook('orderStatusSync');
+            $webhook = $this->receiveWebhook('pullPicklistShipmentCreated');
             $data = $webhook->getData();
 
-            if (empty($data['reference'])) {
-                $this->log->trace("Webhook for an order without a reference received. Ignoring.");
+            if (empty($data['idorder'])) {
+                $this->log->trace("Webhook for an order without an idorder received. Ignoring.");
                 return $this->asJson(['status' => 'OK']);
-            }
-
-            if (empty($data['status'])) {
-                throw new \Exception("Invalid webhook data received.");
             }
 
             $order = Order::find()
-                ->reference($data['reference'])
+                ->id($data['idorder'])
                 ->anyStatus()
                 ->one();
             if (!$order) {
-                $this->log->trace("Order '{$data['reference']}' not found.");
+                $this->log->trace("Order '{$data['idorder']}' not found.");
                 return $this->asJson(['status' => 'OK']);
             }
 
-            $statusId = null;
-            foreach ($this->settings->orderStatusMapping as $mapping) {
-                if (!empty($mapping['craft'])) {
-                    $orderStatus = $order->getOrderStatus();
-                    if (!$orderStatus || $orderStatus->handle != $mapping['craft']) {
-                        continue;
-                    }
-                }
-                if ($mapping['picqer'] == $data['status']) {
-                    $orderStatus = CommercePlugin::getInstance()->getOrderStatuses()->getOrderStatusByHandle($mapping['changeTo']);
-                    if (!$orderStatus) {
-                        throw new \Exception("Order status '{$mapping['changeTo']}' not found in Craft.");
-                    }
-                    $statusId = $orderStatus->id;
-                    break;
-                }
-            }
+            $orderStatus = $order->getOrderStatus();
 
-            if ($statusId !== null && $statusId != $order->orderStatusId) {
-                $order->orderStatusId = $statusId;
-                $order->message = \Craft::t('commerce-picqer',"[Picqer] Status updated via webhook ({status})",['status' => $data['status']]);
+            if ($orderStatus->handle !== 'delivered' && $orderStatus->handle !== 'shipped') {
+                $orderStatus = CommercePlugin::getInstance()->getOrderStatuses()->getOrderStatusByHandle('shipped');
+                $order->orderSiteId = $orderStatus->id;
                 if (!\Craft::$app->getElements()->saveElement($order)) {
                     throw new \Exception("Could not update order status. " . json_encode($order->getFirstErrors()));
                 } else {
-                    $this->log->log("Order status changed to '{$order->orderStatusId}' for order '{$order->reference}'.");
+                    $this->log->log("Order status changed to '{$order->orderStatusId}' for order '{$order->id}'.");
                 }
-            }
-
-            if ($data['status'] == OrderSyncStatus::STATUS_COMPLETED ||
-                $data['status'] == OrderSyncStatus::STATUS_PROCESSING) {
-
-                $status = CommercePicqerPlugin::getInstance()->orderSync->getOrderSyncStatus($order);
-                $status->stockAllocated = true;
-                $status->processed = true;
-                CommercePicqerPlugin::getInstance()->orderSync->saveOrderSyncStatus($status);
             }
 
         } catch (HttpException $e) {
@@ -242,9 +212,6 @@ class WebhooksController extends Controller
         } catch (\Exception $e) {
             $this->log->error("Could not process webhook", $e);
             return $this->asJson(['status' => 'ERROR'])->setStatusCode(500);
-        }
-        finally {
-            $this->settings->pushOrders = $originalPushOrders;
         }
 
         return $this->asJson(['status' => 'OK']);
