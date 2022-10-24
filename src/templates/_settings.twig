@@ -232,6 +232,27 @@
                         static:     not allowAdminChanges,
                     }) }}
 
+                    {{ forms.editableTableField({
+                        label: 'Order status for picklist'|t('commerce-picqer'),
+                        instructions: 'You can map specific Craft order status to use for the picklist. Get information when shipment is created form picklist.'|t('commerce-picqer'),
+                        id: 'mappingPicklist',
+                        name: 'orderStatusMappingPicklist',
+                        cols: {
+                            craft: {
+                                type: "select",
+                                options: settings.getOrderStatusOptions('(Any)'|t('commerce-picqer')),
+                                heading: 'From Craft order status'|t('commerce-picqer')
+                            },
+                            changeTo: {
+                                type: "select",
+                                options: settings.getOrderStatusOptions('(Any)'|t('commerce-picqer')),
+                                heading: 'Change Craft status to'|t('commerce-picqer')
+                            },
+                        },
+                        rows: settings.orderStatusMappingPicklist,
+                        static:     not allowAdminChanges,
+                    }) }}
+
                 </div>
                 <div id="advanced" class="hidden">
 

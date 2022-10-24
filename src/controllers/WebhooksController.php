@@ -13,6 +13,7 @@ use white\commerce\picqer\models\OrderSyncStatus;
 use white\commerce\picqer\models\Webhook;
 use yii\helpers\VarDumper;
 use yii\web\HttpException;
+use function json_encode;
 
 class WebhooksController extends Controller
 {
@@ -169,7 +170,7 @@ class WebhooksController extends Controller
         return $this->asJson(['status' => 'OK']);
     }
 
-//    TODO: Add mapping for this webhook
+    // TODO: Add mapping for this webhook
     public function actionPullPicklistShipmentCreated()
     {
         if (!$this->settings->pullPicklistShipmentCreated) {
@@ -194,10 +195,21 @@ class WebhooksController extends Controller
                 return $this->asJson(['status' => 'OK']);
             }
 
-            $orderStatus = $order->getOrderStatus();
 
-            if ($orderStatus->handle !== 'delivered' && $orderStatus->handle !== 'shipped') {
-                $orderStatus = CommercePlugin::getInstance()->getOrderStatuses()->getOrderStatusByHandle('shipped');
+            $notSet = false;
+            $changeTo = '';
+            $orderStatus = $order->getOrderStatus();
+            foreach ($this->settings->orderStatusMappingPicklist as $mapping) {
+                $changeTo = $mapping['changeTo'];
+                if (!empty($mapping['craft'])) {
+                    if (!$orderStatus || $orderStatus->handle != $mapping['craft']) {
+                        $notSet = true;
+                    }
+                }
+            }
+
+            if ($notSet) {
+                $orderStatus = CommercePlugin::getInstance()->getOrderStatuses()->getOrderStatusByHandle($changeTo);
                 $order->orderSiteId = $orderStatus->id;
                 if (!\Craft::$app->getElements()->saveElement($order)) {
                     throw new \Exception("Could not update order status. " . json_encode($order->getFirstErrors()));

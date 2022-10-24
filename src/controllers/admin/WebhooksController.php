@@ -96,7 +96,7 @@ class WebhooksController extends Controller
                 $event = 'orders.status_changed';
                 $action = 'on-order-status-changed';
                 break;
-                case 'pullPicklistShipmentCreated':
+            case 'pullPicklistShipmentCreated':
                 $event = 'picklists.shipments.created';
                 $action = 'pull-picklist-shipment-created';
                 break;

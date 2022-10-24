@@ -31,6 +31,8 @@ class Settings extends Model
 
     public $pullPicklistShipmentCreated = false;
 
+    public $orderStatusMappingPicklist = [];
+
     /**
      * @var array
      */
@@ -61,6 +63,7 @@ class Settings extends Model
         return [
             ['pluginNameOverride', 'default', 'value' => Craft::t('commerce-picqer', "Picqer")],
             ['orderStatusMapping', 'default', 'value' => []],
+            ['orderStatusMappingPicklist', 'default', 'value' => []],
             [['apiDomain', 'apiKey'], 'required'],
         ];
     }
