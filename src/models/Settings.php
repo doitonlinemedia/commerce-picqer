@@ -46,6 +46,7 @@ class Settings extends Model
 
     public $virtualProductType = '';
 
+    public $picklistShipmentCreatedMailTemplateId;
 
     /**
      * @inheritdoc
@@ -100,6 +101,27 @@ class Settings extends Model
 
         foreach ($types as $type) {
             $options[] = ['value' => $type->handle, 'label' => $type->name];
+        }
+
+        return $options;
+    }
+
+    /**
+     * @param $optional
+     * @return array
+     */
+    public function getMailTemplates($optional = null): array
+    {
+        $types   = CommercePlugin::getInstance()->getEmails()->getAllEnabledEmails();
+        $options = [];
+
+        if ($optional !== null) {
+            $options[] = ['value' => null, 'label' => $optional];
+        }
+
+
+        foreach ($types as $type) {
+            $options[] = ['value' => $type->id, 'label' => $type->name];
         }
 
         return $options;
