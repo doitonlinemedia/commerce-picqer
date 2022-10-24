@@ -234,14 +234,14 @@
 
                     {{ forms.editableTableField({
                         label: 'Order status for picklist'|t('commerce-picqer'),
-                        instructions: 'You can map specific Craft order status to use for the picklist. Get information when shipment is created form picklist.'|t('commerce-picqer'),
+                        instructions: 'You can map specific Craft order status to use for the picklist. Get information when shipment is created form picklist. If empty trigger doesn\'t do anything'|t('commerce-picqer'),
                         id: 'mappingPicklist',
                         name: 'orderStatusMappingPicklist',
                         cols: {
                             craft: {
                                 type: "select",
                                 options: settings.getOrderStatusOptions('(Any)'|t('commerce-picqer')),
-                                heading: 'From Craft order status'|t('commerce-picqer')
+                                heading: 'From Craft order status that you don\'t want to be updated'|t('commerce-picqer')
                             },
                             changeTo: {
                                 type: "select",
