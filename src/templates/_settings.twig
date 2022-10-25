@@ -188,14 +188,6 @@
                                 style="display: none;">{{ "Remove"|t }}</button>
                     </div>
 
-                    {{ forms.lightswitchField({
-                        label:        "Pull picklist shipment created"|t('commerce-picqer'),
-                        instructions: "Get information when shipment is created form picklist."|t('commerce-picqer'),
-                        id:           'pullPicklistShipmentCreated',
-                        name:         'pullPicklistShipmentCreated',
-                        on:           settings.pullPicklistShipmentCreated,
-                        disabled:     not allowAdminChanges,
-                    }) }}
                     {{ forms.editableTableField({
                         label: 'Order status mapping'|t('commerce-picqer'),
                         instructions: 'You can map specific Picqer order status to a Craft order status. Craft order status will be updated automatically when the Picqer order status changes.'|t('commerce-picqer'),
@@ -223,6 +215,14 @@
                     }) }}
                 </div>
                 <div id="shipment-webhook-settings" class="hidden">
+                    {{ forms.lightswitchField({
+                        label:        "Pull picklist shipment created"|t('commerce-picqer'),
+                        instructions: "Get information when shipment is created form picklist."|t('commerce-picqer'),
+                        id:           'pullPicklistShipmentCreated',
+                        name:         'pullPicklistShipmentCreated',
+                        on:           settings.pullPicklistShipmentCreated,
+                        disabled:     not allowAdminChanges,
+                    }) }}
                     <div id="pullPicklistShipmentCreatedWebhook" class="webhook-status"
                          data-hook-type="pullPicklistShipmentCreated">
                         {{ "Webhook status:"|t('commerce-picqer') }}
