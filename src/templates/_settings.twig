@@ -221,19 +221,6 @@
                         rows: settings.orderStatusMapping,
                         static:     not allowAdminChanges,
                     }) }}
-
-                    {{ forms.selectField({
-                        label:        "Needs to sent mail when shipment is created"|t('commerce-picqer'),
-                        instructions: "What template do we need to sent to customer when shipment is created (For every shipment) (Choose None if you do not want to use this)"|t('commerce-picqer'),
-                        id:           'picklistShipmentCreatedTemplate',
-                        name:         'picklistShipmentCreatedTemplate',
-                        options:      settings.getMailTemplates('None'),
-                        value:        settings.picklistShipmentCreatedMailTemplateId,
-                        errors:       settings.getErrors('picklistShipmentCreatedMailTemplateId'),
-                        disabled:     not allowAdminChanges
-                    }) }}
-
-
                 </div>
                 <div id="shipment-webhook-settings" class="hidden">
                     <div id="pullPicklistShipmentCreatedWebhook" class="webhook-status"
@@ -265,6 +252,17 @@
                         },
                         rows: settings.orderStatusMappingPicklist,
                         static:     not allowAdminChanges,
+                    }) }}
+
+                    {{ forms.selectField({
+                        label:        "Needs to sent mail when shipment is created"|t('commerce-picqer'),
+                        instructions: "What template do we need to sent to customer when shipment is created (For every shipment) (Choose None if you do not want to use this)"|t('commerce-picqer'),
+                        id:           'picklistShipmentCreatedMailTemplateId',
+                        name:         'picklistShipmentCreatedMailTemplateId',
+                        options:      settings.getMailTemplates('None'),
+                        value:        settings.picklistShipmentCreatedMailTemplateId,
+                        errors:       settings.getErrors('picklistShipmentCreatedMailTemplateId'),
+                        disabled:     not allowAdminChanges
                     }) }}
                 </div>
                 <div id="advanced" class="hidden">
