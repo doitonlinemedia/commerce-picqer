@@ -12,6 +12,8 @@ use Picqer\Api\PicqerWebhook;
 use white\commerce\picqer\CommercePicqerPlugin;
 use white\commerce\picqer\models\OrderSyncStatus;
 use white\commerce\picqer\models\Webhook;
+use white\commerce\picqer\records\OrderSyncStatus as OrderSyncStatusRecord;
+use white\commerce\picqer\services\OrderSync;
 use yii\helpers\VarDumper;
 use yii\web\HttpException;
 
@@ -101,7 +103,6 @@ class WebhooksController extends Controller
         try {
             $webhook = $this->receiveWebhook('orderStatusSync');
             $data    = $webhook->getData();
-
             if (empty($data['reference'])) {
                 $this->log->trace("Webhook for an order without a reference received. Ignoring.");
                 return $this->asJson(['status' => 'OK']);
@@ -182,7 +183,6 @@ class WebhooksController extends Controller
         if (!$this->settings->pullPicklistShipmentCreated) {
             return $this->asJson(['status' => 'IGNORED'])->setStatusCode(400);
         }
-
         try {
             $webhook = $this->receiveWebhook('pullPicklistShipmentCreated');
             $data    = $webhook->getData();
@@ -191,11 +191,18 @@ class WebhooksController extends Controller
                 $this->log->trace("Webhook for an order without an idorder received. Ignoring.");
                 return $this->asJson(['status' => 'OK']);
             }
-
+            $craftOrder = OrderSyncStatusRecord::findOne([
+                'picqerOrderId' => $data['idorder'],
+            ]);
+            if (!$craftOrder) {
+                $this->log->trace("Webhook for an order without an valid idorder received. Ignoring.");
+                return $this->asJson(['status' => 'OK']);
+            }
             $order = Order::find()
-                ->id($data['idorder'])
+                ->id($craftOrder->orderId)
                 ->anyStatus()
                 ->one();
+
             if (!$order) {
                 $this->log->trace("Order '{$data['idorder']}' not found.");
                 return $this->asJson(['status' => 'OK']);
@@ -205,29 +212,37 @@ class WebhooksController extends Controller
                 )->getEmailById($this->settings->picklistShipmentCreatedMailTemplateId)) {
                 Plugin::getInstance()->getEmails()->sendEmail($email, $order);
             }
-
-
-            $notSet      = false;
-            $changeTo    = '';
-            $orderStatus = $order->getOrderStatus();
+            $statusId = null;
             foreach ($this->settings->orderStatusMappingPicklist as $mapping) {
-                $changeTo = $mapping['changeTo'];
                 if (!empty($mapping['craft'])) {
+                    $orderStatus = $order->getOrderStatus();
                     if (!$orderStatus || $orderStatus->handle != $mapping['craft']) {
-                        $notSet = true;
+                        continue;
                     }
                 }
+                $orderStatus = CommercePlugin::getInstance()->getOrderStatuses()->getOrderStatusByHandle(
+                    $mapping['changeTo']
+                );
+                if (!$orderStatus) {
+                    throw new \Exception("Order status '{$mapping['changeTo']}' not found in Craft.");
+                }
+                $statusId = $orderStatus->id;
+                break;
             }
 
-            if ($notSet) {
-                $orderStatus        = CommercePlugin::getInstance()->getOrderStatuses()->getOrderStatusByHandle(
-                    $changeTo
+            if ($statusId !== null && $statusId != $order->orderStatusId) {
+                $order->orderStatusId = $statusId;
+                $order->message       = \Craft::t(
+                    'commerce-picqer',
+                    "[Picqer] Shipment with id {shipmentId} created, status updated via webhook shipment created",
+                    ['shipmentId' => $data['idshipment']]
                 );
-                $order->orderSiteId = $orderStatus->id;
                 if (!\Craft::$app->getElements()->saveElement($order)) {
                     throw new \Exception("Could not update order status. " . json_encode($order->getFirstErrors()));
                 } else {
-                    $this->log->log("Order status changed to '{$order->orderStatusId}' for order '{$order->id}'.");
+                    $this->log->log(
+                        "Order status changed to '{$order->orderStatusId}' for order '{$order->reference}'."
+                    );
                 }
             }
         } catch (HttpException $e) {
