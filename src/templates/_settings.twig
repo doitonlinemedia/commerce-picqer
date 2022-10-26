@@ -18,7 +18,7 @@
     {% set tabs = tabs|merge([
         { label: 'Craft to Picqer'|t('commerce-picqer'), url: '#settings-craft2picqer' },
         { label: 'Picqer to Craft'|t('commerce-picqer'), url: '#settings-picqer2craft' },
-        { label: 'Shipment webhook settings'|t('commerce-picqer'), url:'#settings-shipment-webhook-settings'},
+        { label: 'Shipment settings'|t('commerce-picqer'), url:'#settings-shipment-webhook-settings'},
         { label: 'Advanced'|t('commerce-picqer'), url: '#settings-advanced' },
     ]) %}
 {% endif %}
@@ -235,18 +235,18 @@
                     </div>
                     {{ forms.editableTableField({
                         label: 'Order status for picklist'|t('commerce-picqer'),
-                        instructions: 'You can map specific Craft order status to use for the picklist. Get information when shipment is created form picklist. If empty trigger doesn\'t do anything'|t('commerce-picqer'),
+                        instructions: 'When a picker shipment is created, map the picqer status to the craft Status in the mapping below. if the status in Craft is already the same status, it will not change again.'|t('commerce-picqer'),
                         id: 'mappingPicklist',
                         name: 'orderStatusMappingPicklist',
                         cols: {
                             craft: {
                                 type: "select",
                                 options: settings.getOrderStatusOptions('(Any)'|t('commerce-picqer')),
-                                heading: 'From Craft order status that you don\'t want to be updated'|t('commerce-picqer')
+                                heading: 'From Craft order status'|t('commerce-picqer')
                             },
                             changeTo: {
-                                type: "select",
-                                options: settings.getOrderStatusOptions('(Any)'|t('commerce-picqer')),
+                                type: 'select',
+                                options: settings.getOrderStatusOptions(),
                                 heading: 'Change Craft status to'|t('commerce-picqer')
                             },
                         },
@@ -255,7 +255,7 @@
                     }) }}
 
                     {{ forms.selectField({
-                        label:        "Needs to sent mail when shipment is created"|t('commerce-picqer'),
+                        label:        "Needs to sent mail when a shipment is created"|t('commerce-picqer'),
                         instructions: "What template do we need to sent to customer when shipment is created (For every shipment) (Choose None if you do not want to use this)"|t('commerce-picqer'),
                         id:           'picklistShipmentCreatedMailTemplateId',
                         name:         'picklistShipmentCreatedMailTemplateId',
