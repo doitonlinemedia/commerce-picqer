@@ -10,7 +10,7 @@ use craft\commerce\Plugin as CommercePlugin;
 use craft\web\Controller;
 use Picqer\Api\PicqerWebhook;
 use white\commerce\picqer\CommercePicqerPlugin;
-use white\commerce\picqer\jobs\changeStatusOfOrderJob;
+use white\commerce\picqer\jobs\ChangeStatusOfOrderJob;
 use white\commerce\picqer\jobs\SyncProductsJob;
 use white\commerce\picqer\models\OrderSyncStatus;
 use white\commerce\picqer\models\Webhook;
@@ -149,7 +149,7 @@ class WebhooksController extends Controller
             if ($statusId !== null && $statusId != $order->orderStatusId) {
                 Queue::push(
                     new ChangeStatusOfOrderJob(
-                        ['orderId' => $order->id, 'newStatusId' => $statusId, 'picerStatus' => $data['status']]
+                        ['orderId' => $order->id, 'newStatusId' => $statusId, 'picqerStatus' => $data['status']]
                     ),
                     10
                 );
