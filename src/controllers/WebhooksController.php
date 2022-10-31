@@ -103,6 +103,12 @@ class WebhooksController extends Controller
         try {
             $webhook = $this->receiveWebhook('orderStatusSync');
             $data    = $webhook->getData();
+
+            //Sleep 5 for status completed. picQer calls [picklists.shipments.created AND orders.status_changed] at the same time when picklist is done in 1 go.
+            if ($data['status'] === 'completed') {
+                sleep(5);
+            }
+
             if (empty($data['reference'])) {
                 $this->log->trace("Webhook for an order without a reference received. Ignoring.");
                 return $this->asJson(['status' => 'OK']);
@@ -208,8 +214,7 @@ class WebhooksController extends Controller
                 return $this->asJson(['status' => 'OK']);
             }
             //template has been set, trigger event for base project to listen on.
-            if ($this->settings->picklistShipmentCreatedMailTemplateId && $email = Plugin::getInstance()->getEmails(
-                )->getEmailById($this->settings->picklistShipmentCreatedMailTemplateId)) {
+            if ($this->settings->picklistShipmentCreatedMailTemplateId && $email = Plugin::getInstance()->getEmails()->getEmailById($this->settings->picklistShipmentCreatedMailTemplateId)) {
                 Plugin::getInstance()->getEmails()->sendEmail($email, $order);
             }
             $statusId = null;
