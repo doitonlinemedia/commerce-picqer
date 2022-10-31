@@ -104,11 +104,6 @@ class WebhooksController extends Controller
             $webhook = $this->receiveWebhook('orderStatusSync');
             $data    = $webhook->getData();
 
-            //Sleep 5 for status completed. picQer calls [picklists.shipments.created AND orders.status_changed] at the same time when picklist is done in 1 go.
-            if ($data['status'] === 'completed') {
-                sleep(5);
-            }
-
             if (empty($data['reference'])) {
                 $this->log->trace("Webhook for an order without a reference received. Ignoring.");
                 return $this->asJson(['status' => 'OK']);
@@ -116,6 +111,11 @@ class WebhooksController extends Controller
 
             if (empty($data['status'])) {
                 throw new \Exception("Invalid webhook data received.");
+            }
+
+            //Sleep 5 for status completed. picQer calls [picklists.shipments.created AND orders.status_changed] at the same time when picklist is done in 1 go.
+            if ($data['status'] === 'completed') {
+                sleep(5);
             }
 
             $order = Order::find()
