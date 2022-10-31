@@ -47,6 +47,14 @@ class ChangeStatusOfOrderJob extends \craft\queue\BaseJob implements RetryableJo
                 "Order status changed to '{$order->orderStatusId}' for order '{$order->reference}'."
             );
         }
+
+        if ($this->picqerStatus == OrderSyncStatus::STATUS_COMPLETED ||
+            $this->picqerStatus == OrderSyncStatus::STATUS_PROCESSING) {
+            $status                 = CommercePicqerPlugin::getInstance()->orderSync->getOrderSyncStatus($order);
+            $status->stockAllocated = true;
+            $status->processed      = true;
+            CommercePicqerPlugin::getInstance()->orderSync->saveOrderSyncStatus($status);
+        }
     }
 
     /**

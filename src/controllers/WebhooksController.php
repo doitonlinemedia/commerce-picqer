@@ -152,14 +152,9 @@ class WebhooksController extends Controller
                     ),
                     10
                 );
-            }
-
-            if ($data['status'] == OrderSyncStatus::STATUS_COMPLETED ||
-                $data['status'] == OrderSyncStatus::STATUS_PROCESSING) {
-                $status                 = CommercePicqerPlugin::getInstance()->orderSync->getOrderSyncStatus($order);
-                $status->stockAllocated = true;
-                $status->processed      = true;
-                CommercePicqerPlugin::getInstance()->orderSync->saveOrderSyncStatus($status);
+                $this->log->log(
+                    'job with orderId:' . $order->id . ' and new status ID:' . $statusId . ' and with picqer status:' . $data['status'] . ' pushed to queue.'
+                );
             }
         } catch (HttpException $e) {
             $this->log->error("Could not process webhook", $e);
