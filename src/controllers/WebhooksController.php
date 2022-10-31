@@ -18,6 +18,7 @@ use white\commerce\picqer\records\OrderSyncStatus as OrderSyncStatusRecord;
 use white\commerce\picqer\services\OrderSync;
 use yii\helpers\VarDumper;
 use yii\web\HttpException;
+use craft\helpers\Queue;
 
 use function json_encode;
 
