@@ -10,6 +10,8 @@ use craft\commerce\Plugin as CommercePlugin;
 use craft\web\Controller;
 use Picqer\Api\PicqerWebhook;
 use white\commerce\picqer\CommercePicqerPlugin;
+use white\commerce\picqer\jobs\changeStatusOfOrderJob;
+use white\commerce\picqer\jobs\SyncProductsJob;
 use white\commerce\picqer\models\OrderSyncStatus;
 use white\commerce\picqer\models\Webhook;
 use white\commerce\picqer\records\OrderSyncStatus as OrderSyncStatusRecord;
@@ -113,10 +115,6 @@ class WebhooksController extends Controller
                 throw new \Exception("Invalid webhook data received.");
             }
 
-            //Sleep 5 for status completed. picQer calls [picklists.shipments.created AND orders.status_changed] at the same time when picklist is done in 1 go.
-            if ($data['status'] === 'completed') {
-                sleep(5);
-            }
 
             $order = Order::find()
                 ->reference($data['reference'])
@@ -148,19 +146,12 @@ class WebhooksController extends Controller
             }
 
             if ($statusId !== null && $statusId != $order->orderStatusId) {
-                $order->orderStatusId = $statusId;
-                $order->message       = \Craft::t(
-                    'commerce-picqer',
-                    "[Picqer] Status updated via webhook ({status})",
-                    ['status' => $data['status']]
+                Queue::push(
+                    new ChangeStatusOfOrderJob(
+                        ['orderId' => $order->id, 'newStatusId' => $statusId, 'picerStatus' => $data['status']]
+                    ),
+                    10
                 );
-                if (!\Craft::$app->getElements()->saveElement($order)) {
-                    throw new \Exception("Could not update order status. " . json_encode($order->getFirstErrors()));
-                } else {
-                    $this->log->log(
-                        "Order status changed to '{$order->orderStatusId}' for order '{$order->reference}'."
-                    );
-                }
             }
 
             if ($data['status'] == OrderSyncStatus::STATUS_COMPLETED ||
@@ -174,7 +165,7 @@ class WebhooksController extends Controller
             $this->log->error("Could not process webhook", $e);
             return $this->asJson(['status' => 'ERROR'])->setStatusCode($e->statusCode);
         } catch (\Exception $e) {
-            $this->log->error("Could not process webhook", $e);
+            $this->log->error("Could not process `webhook", $e);
             return $this->asJson(['status' => 'ERROR'])->setStatusCode(500);
         } finally {
             $this->settings->pushOrders = $originalPushOrders;
@@ -183,7 +174,6 @@ class WebhooksController extends Controller
         return $this->asJson(['status' => 'OK']);
     }
 
-    // TODO: Add mapping for this webhook
     public function actionPullPicklistShipmentCreated()
     {
         if (!$this->settings->pullPicklistShipmentCreated) {
@@ -214,7 +204,8 @@ class WebhooksController extends Controller
                 return $this->asJson(['status' => 'OK']);
             }
             //template has been set, trigger event for base project to listen on.
-            if ($this->settings->picklistShipmentCreatedMailTemplateId && $email = Plugin::getInstance()->getEmails()->getEmailById($this->settings->picklistShipmentCreatedMailTemplateId)) {
+            if ($this->settings->picklistShipmentCreatedMailTemplateId && $email = Plugin::getInstance()->getEmails(
+                )->getEmailById($this->settings->picklistShipmentCreatedMailTemplateId)) {
                 Plugin::getInstance()->getEmails()->sendEmail($email, $order);
             }
             $statusId = null;
